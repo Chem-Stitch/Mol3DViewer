@@ -87,7 +87,7 @@
       populate(this.viewer,data,this.onPick);
       this.viewer.setBackgroundColor(data.settings.background,1);
       if(saved)this.viewer.setView(saved);
-      else {this.viewer.zoomTo();this.viewer.zoom(.82);}
+      else {this.viewer.zoomTo();this.viewer.zoom(1.05);}
       if(fit||!this.initialView)this.initialView=this.viewer.getView().slice();
       this.viewer.render();
       this.refreshLabels();
@@ -102,7 +102,7 @@
       this.data.settings=settings;shading(this.viewer,settings);this.viewer.render();
     }
     setSelection(selected) {if(this.data){this.data.selected=selected;this.refreshLabels();}}
-    fit() {if(!this.data)return;this.viewer.zoomTo();this.viewer.zoom(.82);this.viewer.render();}
+    fit() {if(!this.data)return;this.viewer.zoomTo();this.viewer.zoom(1.05);this.viewer.render();}
     reset() {if(this.initialView)this.viewer.setView(this.initialView.slice());this.viewer.render();}
     preset(name) {
       if(!this.data)return;

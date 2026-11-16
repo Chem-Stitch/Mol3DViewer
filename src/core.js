@@ -10,7 +10,7 @@
   const ELEMENTS = new Set(SYMBOLS);
   const COVALENT = Object.fromEntries('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba W Re Os Ir Pt Au Hg Pb Bi'.split(' ').map((s,i)=>[s,[.31,.28,1.28,.96,.84,.76,.71,.66,.57,.58,1.66,1.41,1.21,1.11,1.07,1.05,1.02,1.06,2.03,1.76,1.70,1.60,1.53,1.39,1.39,1.32,1.26,1.24,1.32,1.22,1.22,1.20,1.19,1.20,1.20,1.16,2.20,1.95,1.90,1.75,1.64,1.54,1.46,1.42,1.39,1.45,1.44,1.42,1.39,1.39,1.38,1.39,1.40,2.44,2.15,1.62,1.51,1.44,1.41,1.36,1.36,1.32,1.46,1.48][i]]));
   const COLORS = {H:'#eeeeea',C:'#35454e',N:'#2868c8',O:'#df4148',F:'#69b98b',P:'#dfa04e',S:'#d8bb4d',Cl:'#51a67a',Br:'#a65e4d',I:'#8864a5',Si:'#bba994',B:'#d0a08a',Se:'#cda45e',Fe:'#ba7d54',Co:'#a28db7',Ni:'#71a28a',Cu:'#b77c52',Zn:'#93a5bc',Pd:'#a2adbe',Pt:'#adb4bf',Rh:'#98b5c1',Ru:'#8a9eb7',Ag:'#b3bcc6',Au:'#d8b354'};
-  const RADII = {H:.155,C:.265,N:.25,O:.25,F:.235,P:.295,S:.295,Se:.315,Cl:.285,Br:.305,I:.335,Pd:.335};
+  const RADII = {H:.175,C:.265,N:.25,O:.25,F:.235,P:.295,S:.295,Se:.315,Cl:.285,Br:.305,I:.335,Pd:.335};
   const MAX_ATOMS = 5000, MAX_FRAMES = 500, MAX_BONDS = 20000;
   const DEFAULTS = Object.freeze({atomScale:1,bondRadius:.045,dashRadius:.027,dashLength:.15,dashGap:.11,bondColor:'#9ba3a8',dashColor:'#677f88',background:'#ffffff',labels:false,orthographic:true,indexBase:0,autoScale:1.2,elementColors:{},transparent:true,exportSize:2400,ambientOcclusion:true,aoStrength:.45,aoRadius:1.2});
   const SHADING_PRESETS = Object.freeze({basic:{ambientOcclusion:false,aoStrength:.45,aoRadius:1.2},soft:{ambientOcclusion:true,aoStrength:.45,aoRadius:1.2},strong:{ambientOcclusion:true,aoStrength:.9,aoRadius:2}});
@@ -118,6 +118,68 @@
     }
     return mergeBonds([],result,atoms);
   }
+  // Conservative drawing heuristics, not a chemical identity/charge solver.
+  // Cutoffs (angstrom) are deliberately independent of connectivity tolerance.
+  const ORGANIC_VALENCE = {H:1,B:3,C:4,N:3,O:2,F:1,Si:4,P:3,S:2,Cl:1,Br:1,I:1};
+  const MULTIPLE_CUTOFFS = {'C-C':[1.43,1.25],'C-N':[1.36,1.20],'C-O':[1.30],
+    'N-N':[1.30,1.14],'N-O':[1.25],'O-O':[1.25],'C-S':[1.65]};
+  function inferOrganicOrders(atoms,bonds) {
+    const warnings=[];
+    if(atoms.some(a=>!(a.elem in ORGANIC_VALENCE))) {
+      return {bonds,warnings:['Multiple-bond inference skipped: unsupported elements or metals. Review bonds manually.']};
+    }
+    const degree=atoms.map(()=>0);
+    for(const b of bonds){degree[b.a]++;degree[b.b]++;}
+    if(atoms.some((a,i)=>degree[i]>ORGANIC_VALENCE[a.elem])) {
+      return {bonds,warnings:['Connectivity exceeds neutral valence limits; kept single bonds. Check units, charge, and distance tolerance.']};
+    }
+    const remaining=atoms.map((a,i)=>ORGANIC_VALENCE[a.elem]-degree[i]);
+    const candidates=[];
+    for(let i=0;i<bonds.length;i++) {
+      const b=bonds[i],pair=[atoms[b.a].elem,atoms[b.b].elem].sort().join('-');
+      const limits=MULTIPLE_CUTOFFS[pair],d=distance(atoms[b.a],atoms[b.b]);
+      if(!limits||d>limits[0]||!remaining[b.a]||!remaining[b.b])continue;
+      // Extremely compressed coordinates should not silently become triple bonds.
+      if(d<.8){warnings.push('Unusually short bond: left single; review coordinates.');continue;}
+      const extra=limits[1]&&d<=limits[1]?2:1;
+      candidates.push({i,a:b.a,b:b.b,extra,score:1+(limits[0]-d)/limits[0]});
+    }
+    // At most one added bond order per atom unless a short triple-bond candidate
+    // exists. This avoids assigning two doubles to every carbon in aromatic rings,
+    // including structures whose hydrogens were omitted. Cumulenes need review.
+    const capacity=remaining.map((n,i)=>Math.min(n,candidates.some(c=>(c.a===i||c.b===i)&&c.extra===2)?2:1));
+    const adjacency=atoms.map(()=>[]);
+    candidates.forEach((c,i)=>{adjacency[c.a].push(i);adjacency[c.b].push(i);});
+    const seen=new Set();
+    for(let seed=0;seed<candidates.length;seed++) {
+      if(seen.has(seed))continue;
+      const component=[],stack=[seed];seen.add(seed);
+      while(stack.length){const index=stack.pop(),c=candidates[index];component.push(c);
+        for(const atom of [c.a,c.b])for(const next of adjacency[atom])if(!seen.has(next)){seen.add(next);stack.push(next);}}
+      component.sort((a,b)=>b.extra-a.extra||b.score-a.score||a.i-b.i);
+      // Start with a valid greedy solution; bounded search improves competing
+      // assignments (e.g. aromatic rings) without exponential UI stalls.
+      const available=capacity.slice(),greedy=[];
+      let bestScore=0;
+      for(const c of component){const n=Math.min(c.extra,available[c.a],available[c.b]);greedy.push(n);available[c.a]-=n;available[c.b]-=n;bestScore+=n*c.score;}
+      let best=greedy.slice(),visited=0,limited=false;
+      if(component.length<=24) {
+        const free=capacity.slice(),chosen=[],upper=Array(component.length+1).fill(0);
+        for(let k=component.length-1;k>=0;k--)upper[k]=upper[k+1]+component[k].extra*component[k].score;
+        function search(k,score){
+          if(++visited>20000){limited=true;return;}
+          if(score+upper[k]<=bestScore+1e-9)return;
+          if(k===component.length){bestScore=score;best=chosen.slice();return;}
+          const c=component[k],max=Math.min(c.extra,free[c.a],free[c.b]);
+          for(let n=max;n>=0;n--){chosen[k]=n;free[c.a]-=n;free[c.b]-=n;search(k+1,score+n*c.score);free[c.a]+=n;free[c.b]+=n;if(limited)break;}
+        }
+        search(0,0);
+      } else limited=true;
+      if(limited)warnings.push('Complex conjugated region: bounded bond-order estimate; review manually.');
+      component.forEach((c,i)=>{bonds[c.i]={...bonds[c.i],order:1+best[i]};});
+    }
+    return {bonds,warnings:[...new Set(warnings)]};
+  }
   function inferBonds(atoms,scale=1.2) {
     if (!Number.isFinite(scale)||scale<.8||scale>1.6) throw new Error('Auto-bond tolerance must be 0.8–1.6.');
     const known=atoms.map((a,i)=>({a,i,r:COVALENT[a.elem]})).filter(v=>v.r);
@@ -136,7 +198,9 @@
       }
       const c=cell.join(',');if (!cells.has(c)) cells.set(c,[]);cells.get(c).push(v);
     }
-    return {bonds,warnings:missing.length?[`Auto-bonds skipped ${missing.join(', ')}; add their bonds manually.`]:[]};
+    const result=inferOrganicOrders(atoms,bonds);
+    if(missing.length)result.warnings.unshift(`Auto-bonds skipped ${missing.join(', ')}; add their bonds manually.`);
+    return result;
   }
   function validateSettings(input={}) {
     const out={...DEFAULTS,elementColors:{}};

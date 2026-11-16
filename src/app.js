@@ -69,9 +69,8 @@
     $('selection-text').textContent=chosen.map((i,k)=>`${'ABCD'[k]}: ${atoms()[i].elem}${i+base}`).join(' → ');
     const measurement=chosen.length>=2?C.measure(atoms(),chosen):null;
     $('selection-distance').textContent=measurement?`${measurement.kind}: ${measurement.value===null?'undefined (coincident or collinear atoms)':measurement.value.toFixed(chosen.length===2?3:2)+' '+measurement.unit}`:'Select another atom to measure a distance.';
-    $('selection-note').textContent=chosen.length===4?'A–B–C–D · signed angle (−180° to +180°). Click a fifth atom to start again.':chosen.length===3?'A–B–C · angle at B. Select a fourth atom for a dihedral.':'Select 3 atoms for an angle, or 4 for a dihedral.';
+    $('selection-note').textContent=chosen.length===4?'A–B–C–D · signed angle (−180° to +180°). Click a fifth atom to start again.':chosen.length===3?'A–B–C · angle at B. Select a fourth atom for a dihedral.':chosen.length===2?'B: toggle bond · D: dashed bond · Right-click: clear selection':'Select 3 atoms for an angle, or 4 for a dihedral. Right-click to clear.';
     $('measure-indices').value=chosen.map(i=>i+base).join(', ');
-    $('edit-selected').hidden=chosen.length!==2;
     if(chosen.length===1||chosen.length===2)$('atom-a').value=chosen[0]+base;else $('atom-a').value='';
     if(chosen.length===2) {
       $('atom-b').value=chosen[1]+base;
@@ -201,19 +200,31 @@
   $('open-file').addEventListener('click',()=>$('file-input').click());
   $('file-input').addEventListener('change',safely(async()=>{const file=$('file-input').files[0];$('file-input').value='';await openFile(file);}));
   $('frame-slider').addEventListener('input',safely(()=>{state.frameIndex=Number($('frame-slider').value);$('frame-value').textContent=`${state.frameIndex+1} / ${state.frames.length}`;selectionUI();draw();status(`Frame ${state.frameIndex+1}: ${state.frames[state.frameIndex].comment||'trajectory'} · fixed bonds`);}));
-  $('clear-selection').addEventListener('click',clearSelection);
   window.MoleculeInteraction.bindSelectionReset($('viewer'),clearSelection);
-  $('edit-selected').addEventListener('click',()=>showTab('bonds'));
   $('measure-atoms').addEventListener('click',safely(()=>{state.selection=C.parseSelection($('measure-indices').value,atoms(),state.settings.indexBase);selectionUI();scene?.setSelection(state.selection);status($('selection-distance').textContent);}));
   $('apply-bond').addEventListener('click',safely(()=>{const pair=enteredPair(),type=$('bond-type').value;const bond=C.validateBond({...pair,order:type==='d'?1:Number(type),dashed:type==='d'},atoms());state.selection=[bond.a,bond.b];changeBonds(C.mergeBonds(state.bonds,[bond],atoms()),'Bond updated. Coordinates are unchanged.');}));
   $('remove-bond').addEventListener('click',safely(()=>{const pair=C.validateBond(enteredPair(),atoms()),k=C.key(pair.a,pair.b),next=state.bonds.filter(b=>C.key(b.a,b.b)!==k);if(next.length===state.bonds.length)throw new Error('There is no bond between those atoms.');state.selection=[pair.a,pair.b];changeBonds(next,'Bond removed.');}));
   $('apply-batch').addEventListener('click',safely(()=>{const add=C.parseBondText($('bond-spec').value,atoms(),state.settings.indexBase);if(!add.length)throw new Error('Enter at least one bond.');changeBonds(C.mergeBonds(state.bonds,add,atoms()),`${add.length} bond definitions applied.`);}));
   $('undo-bonds').addEventListener('click',()=>{if(!state.history.length)return;state.bonds=state.history.pop();draw();bondsUI();selectionUI();status('Bond edit undone.');});
   $('clear-bonds').addEventListener('click',()=>changeBonds([],'Bonds cleared. Use Undo edit to restore them.'));
-  $('auto-bonds').addEventListener('click',safely(()=>{const result=C.inferBonds(atoms(),state.settings.autoScale);changeBonds(result.bonds,result.warnings.join(' ')||'Distance-based single bonds generated. Review TS and coordination bonds.');}));
+  $('auto-bonds').addEventListener('click',safely(()=>{const result=C.inferBonds(atoms(),state.settings.autoScale);changeBonds(result.bonds,result.warnings.join(' ')||'Bonds estimated from distance and neutral valence. Review aromatic, charged, and TS structures.');}));
   $('fit-view').addEventListener('click',()=>scene?.fit());$('reset-view').addEventListener('click',()=>scene?.reset());
   document.querySelectorAll('[data-view]').forEach(el=>el.addEventListener('click',()=>scene?.preset(el.dataset.view)));
-  document.addEventListener('keydown',event=>{if(event.key.toLowerCase()==='f'&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName)&&!$('export-dialog').open){event.preventDefault();scene?.fit();}});
+  document.addEventListener('keydown',safely(event=>{
+    const key=window.MoleculeInteraction.shortcutKey(event,$('export-dialog').open);
+    if(!key)return;
+    if(key==='f'){event.preventDefault();scene?.fit();return;}
+    if(!validInput||state.selection.length!==2)return;
+    event.preventDefault();
+    const [a,b]=state.selection,pairKey=C.key(a,b);
+    const exists=state.bonds.some(bond=>C.key(bond.a,bond.b)===pairKey);
+    if(key==='b'&&exists) {
+      changeBonds(state.bonds.filter(bond=>C.key(bond.a,bond.b)!==pairKey),'Bond removed.');
+    } else {
+      const next=C.mergeBonds(state.bonds,[{a,b,order:1,dashed:key==='d'}],atoms());
+      changeBonds(next,key==='d'?'Dashed bond set.':'Bond created.');
+    }
+  }));
   $('save-session').addEventListener('click',safely(()=>{const data=C.validateSession({format:'molecule-studio-session-v1',name:state.name,frames:state.frames,frameIndex:state.frameIndex,bonds:state.bonds,settings:state.settings,view:scene?.getView()||null});download(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),filename(state.name,'.json'));status('Session saved. Open the JSON file to restore this view.');}));
   $('save-xyz').addEventListener('click',()=>{download(new Blob([state.frames.map(C.toXYZ).join('')],{type:'text/plain'}),filename(state.name,'.xyz'));status(`XYZ saved in ångström (${state.frames.length} frame${state.frames.length>1?'s':''}).`);});
   $('open-export').addEventListener('click',()=>{if(!scene)return;$('export-name').value=filename(state.name,'.png');$('export-status').textContent='';exportDimensions();$('export-dialog').showModal();});

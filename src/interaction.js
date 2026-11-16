@@ -24,6 +24,13 @@
       element.removeEventListener('contextmenu',menu);win.removeEventListener('blur',cancel);cancel();
     };
   }
-  return {bindSelectionReset};
+  function shortcutKey(event,dialogOpen=false) {
+    if(dialogOpen||event.defaultPrevented||event.repeat||event.isComposing||event.ctrlKey||event.metaKey||event.altKey)return null;
+    const target=event.target;
+    if(target?.isContentEditable||target?.closest?.('input, textarea, select, [role="textbox"]'))return null;
+    const key=event.key.toLowerCase();
+    return ['f','b','d'].includes(key)?key:null;
+  }
+  return {bindSelectionReset,shortcutKey};
 });
 

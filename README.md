@@ -74,6 +74,13 @@ you move between frames.
 | Select an atom | Left click |
 | Clear atom selection and measurements | Right click without dragging |
 | Fit the structure to the view | **F** or **Fit to view** |
+| Create/remove a bond between two selected atoms | **B** |
+| Set a dashed bond between two selected atoms | **D** |
+
+Shortcuts are inactive while typing or while the export dialog is open. **B**
+removes an existing bond of any type, or creates a single bond if absent.
+**D** creates or replaces the selected pair with a dashed bond. Both support
+**Undo edit**. Selection details appear as text at the lower-left of the viewer.
 
 Atoms are measured in selection order: **A–B** for a distance, **A–B–C** for
 an angle at B, and **A–B–C–D** for a signed dihedral in the range −180° to
@@ -169,8 +176,21 @@ Mol3DViewer is intended for visualization and figure preparation, particularly
 for small molecules, coordination complexes, and reaction structures.
 It displays supplied coordinates; it does not optimize geometries, locate
 transition states, or validate chemical valence. Automatic connectivity uses
-distance cutoffs based on approximate covalent radii and infers single bonds
-only. Review metal coordination, multiple bonds, and forming/breaking bonds
+distance cutoffs based on approximate covalent radii, then estimates multiple
+bonds for supported organic elements using conservative length cutoffs and
+neutral valence limits. Multiple-bond candidates cover C–C, C–N, C–O, C–S,
+N–N, N–O, and O–O. Competing candidates are assigned together with a bounded
+search; simple aromatic rings can receive alternating single/double bonds.
+The distance tolerance slider changes connectivity, not multiple-bond cutoffs.
+
+This is a drawing heuristic, not a full aromaticity or charge solver. Explicit
+hydrogens improve valence constraints. Charged species, radicals, cumulenes,
+hypervalent atoms, fused aromatic systems, and TS structures need manual review.
+Unsupported elements (including metals) or connectivity exceeding neutral
+valence limits cause the entire structure to retain inferred single bonds,
+with a warning. Large/complex candidate regions use a bounded estimate and
+report a warning. Existing manual bonds remain until Auto-detect or a new
+structure replaces them; trajectory frames keep the initially assigned bonds. Review metal coordination, multiple bonds, and forming/breaking bonds
 manually. TS and Pd examples are illustrative rather than optimized structures.
 
 A browser with working WebGL is required for 3D viewing and PNG export.

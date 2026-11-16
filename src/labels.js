@@ -19,7 +19,7 @@
   }
   function paint(context,items,{positionScale=1,fontScale=1}={}) {
     context.save();
-    const fontSize=14*fontScale,padX=5*fontScale,padY=3*fontScale,height=fontSize+2*padY;
+    const fontSize=12*fontScale,padX=4*fontScale,padY=2*fontScale,height=fontSize+2*padY;
     context.font=`600 ${fontSize}px Arial, sans-serif`;
     context.textBaseline='middle';context.textAlign='left';
     for(const item of items) {
