@@ -69,7 +69,7 @@
     $('selection-text').textContent=chosen.map((i,k)=>`${'ABCD'[k]}: ${atoms()[i].elem}${i+base}`).join(' → ');
     const measurement=chosen.length>=2?C.measure(atoms(),chosen):null;
     $('selection-distance').textContent=measurement?`${measurement.kind}: ${measurement.value===null?'undefined (coincident or collinear atoms)':measurement.value.toFixed(chosen.length===2?3:2)+' '+measurement.unit}`:'Select another atom to measure a distance.';
-    $('selection-note').textContent=chosen.length===4?'A–B–C–D · signed angle (−180° to +180°). Click a fifth atom to start again.':chosen.length===3?'A–B–C · angle at B. Select a fourth atom for a dihedral.':chosen.length===2?'B: toggle bond · D: dashed bond · Right-click: clear selection':'Select 3 atoms for an angle, or 4 for a dihedral. Right-click to clear.';
+    $('selection-note').textContent=chosen.length===4?'A–B–C–D · signed angle (−180° to +180°). Click a fifth atom to start again.':chosen.length===3?'A–B–C · angle at B. Select a fourth atom for a dihedral.':chosen.length===2?'B: cycle 1 → 2 → 3 → off · 1/2/3: bond order · D: toggle dash · Blank click / right-click: clear':'Select 3 atoms for an angle, or 4 for a dihedral. Click empty space to clear.';
     $('measure-indices').value=chosen.map(i=>i+base).join(', ');
     if(chosen.length===1||chosen.length===2)$('atom-a').value=chosen[0]+base;else $('atom-a').value='';
     if(chosen.length===2) {
@@ -80,6 +80,7 @@
     for(const id of ['atom-a','atom-b']) {$(id).min=base;$(id).max=Math.max(base,atoms().length-1+base);}
   }
   function pick(index) {
+    blankClick.markPicked();
     state.selection=C.selectAtom(state.selection,index);
     selectionUI();scene?.setSelection(state.selection);
   }
@@ -191,7 +192,8 @@
     el.addEventListener('input',update);el.addEventListener('change',update);
   });
   $('orthographic').addEventListener('change',()=>{state.settings.orthographic=$('orthographic').checked;updateOutputs();draw();});
-  $('toggle-labels').addEventListener('click',()=>{state.settings.labels=!state.settings.labels;updateOutputs();scene?.setSelection(state.selection);});
+  function toggleLabels(){state.settings.labels=!state.settings.labels;updateOutputs();scene?.setSelection(state.selection);}
+  $('toggle-labels').addEventListener('click',toggleLabels);
   $('reset-style').addEventListener('click',()=>{const {indexBase,autoScale,exportSize,transparent}=state.settings;state.settings={...C.clone(C.DEFAULTS),indexBase,autoScale,exportSize,transparent};updateOutputs();palette();draw();status('Figure style reset.');});
   $('index-base').addEventListener('change',()=>{state.settings.indexBase=Number($('index-base').value);selectionUI();bondsUI();scene?.setSelection(state.selection);$('bond-spec').value='';status(`Atom numbering now starts at ${state.settings.indexBase}.`);});
   $('coordinates').addEventListener('input',queueCoordinates);
@@ -201,6 +203,8 @@
   $('file-input').addEventListener('change',safely(async()=>{const file=$('file-input').files[0];$('file-input').value='';await openFile(file);}));
   $('frame-slider').addEventListener('input',safely(()=>{state.frameIndex=Number($('frame-slider').value);$('frame-value').textContent=`${state.frameIndex+1} / ${state.frames.length}`;selectionUI();draw();status(`Frame ${state.frameIndex+1}: ${state.frames[state.frameIndex].comment||'trajectory'} · fixed bonds`);}));
   window.MoleculeInteraction.bindSelectionReset($('viewer'),clearSelection);
+  const blankClick=window.MoleculeInteraction.bindBlankClick($('viewer'),()=>{if(state.selection.length)clearSelection();});
+  window.MoleculeInteraction.bindViewerFocus($('viewer'),$('workspace'));
   $('measure-atoms').addEventListener('click',safely(()=>{state.selection=C.parseSelection($('measure-indices').value,atoms(),state.settings.indexBase);selectionUI();scene?.setSelection(state.selection);status($('selection-distance').textContent);}));
   $('apply-bond').addEventListener('click',safely(()=>{const pair=enteredPair(),type=$('bond-type').value;const bond=C.validateBond({...pair,order:type==='d'?1:Number(type),dashed:type==='d'},atoms());state.selection=[bond.a,bond.b];changeBonds(C.mergeBonds(state.bonds,[bond],atoms()),'Bond updated. Coordinates are unchanged.');}));
   $('remove-bond').addEventListener('click',safely(()=>{const pair=C.validateBond(enteredPair(),atoms()),k=C.key(pair.a,pair.b),next=state.bonds.filter(b=>C.key(b.a,b.b)!==k);if(next.length===state.bonds.length)throw new Error('There is no bond between those atoms.');state.selection=[pair.a,pair.b];changeBonds(next,'Bond removed.');}));
@@ -214,15 +218,17 @@
     const key=window.MoleculeInteraction.shortcutKey(event,$('export-dialog').open);
     if(!key)return;
     if(key==='f'){event.preventDefault();scene?.fit();return;}
+    if(key==='n'){event.preventDefault();toggleLabels();return;}
     if(!validInput||state.selection.length!==2)return;
     event.preventDefault();
     const [a,b]=state.selection,pairKey=C.key(a,b);
-    const exists=state.bonds.some(bond=>C.key(bond.a,bond.b)===pairKey);
-    if(key==='b'&&exists) {
+    const current=state.bonds.find(bond=>C.key(bond.a,bond.b)===pairKey);
+    const specification=window.MoleculeInteraction.bondShortcut(key,current);
+    if(!specification) {
       changeBonds(state.bonds.filter(bond=>C.key(bond.a,bond.b)!==pairKey),'Bond removed.');
-    } else {
-      const next=C.mergeBonds(state.bonds,[{a,b,order:1,dashed:key==='d'}],atoms());
-      changeBonds(next,key==='d'?'Dashed bond set.':'Bond created.');
+    } else if(!current||current.order!==specification.order||current.dashed!==specification.dashed) {
+      const next=C.mergeBonds(state.bonds,[{a,b,...specification}],atoms());
+      changeBonds(next,specification.dashed?'Dashed bond set.':`${['','Single','Double','Triple'][specification.order]} bond set.`);
     }
   }));
   $('save-session').addEventListener('click',safely(()=>{const data=C.validateSession({format:'molecule-studio-session-v1',name:state.name,frames:state.frames,frameIndex:state.frameIndex,bonds:state.bonds,settings:state.settings,view:scene?.getView()||null});download(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),filename(state.name,'.json'));status('Session saved. Open the JSON file to restore this view.');}));

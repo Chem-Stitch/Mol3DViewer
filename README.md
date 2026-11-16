@@ -1,5 +1,7 @@
 # Mol3DViewer
 
+[Open Mol3DViewer](https://chem-stitch.github.io/Mol3DViewer/)
+
 **Interactive 3D molecular visualization and figure preparation from XYZ coordinates.**
 
 Mol3DViewer is a browser-based tool for inspecting molecular geometries and
@@ -72,14 +74,21 @@ you move between frames.
 | Zoom | Mouse wheel / scroll |
 | Pan | Right-button drag |
 | Select an atom | Left click |
-| Clear atom selection and measurements | Right click without dragging |
+| Clear atom selection and measurements | Click empty canvas space, or right click without dragging |
 | Fit the structure to the view | **F** or **Fit to view** |
-| Create/remove a bond between two selected atoms | **B** |
-| Set a dashed bond between two selected atoms | **D** |
+| Toggle atom indices | **N** or **Atom indices** |
+| Cycle single → double → triple → no bond between two selected atoms | **B** |
+| Set single, double, or triple bond between two selected atoms | **1**, **2**, **3** |
+| Toggle a dashed bond between two selected atoms | **D** |
+
+Click the molecule canvas after editing coordinates to move keyboard focus back
+to the viewer.
 
 Shortcuts are inactive while typing or while the export dialog is open. **B**
-removes an existing bond of any type, or creates a single bond if absent.
-**D** creates or replaces the selected pair with a dashed bond. Both support
+cycles single → double → triple → no bond, starting at single if absent or
+dashed. **1**, **2**, and **3** set the corresponding solid bond directly.
+**D** replaces a solid bond with a dashed bond (or creates one if absent);
+pressing **D** again removes it. These edits support
 **Undo edit**. Selection details appear as text at the lower-left of the viewer.
 
 Atoms are measured in selection order: **A–B** for a distance, **A–B–C** for
