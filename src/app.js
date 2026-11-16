@@ -66,10 +66,10 @@
   function selectionUI() {
     const base=state.settings.indexBase,chosen=state.selection;
     $('selection-card').hidden=chosen.length===0;
-    $('selection-text').textContent=chosen.map((i,k)=>`${'ABCD'[k]}: ${atoms()[i].elem}${i+base}`).join(' → ');
+    $('selection-text').textContent=chosen.map(i=>`${atoms()[i].elem}${i+base}`).join(' → ');
     const measurement=chosen.length>=2?C.measure(atoms(),chosen):null;
     $('selection-distance').textContent=measurement?`${measurement.kind}: ${measurement.value===null?'undefined (coincident or collinear atoms)':measurement.value.toFixed(chosen.length===2?3:2)+' '+measurement.unit}`:'Select another atom to measure a distance.';
-    $('selection-note').textContent=chosen.length===4?'A–B–C–D · signed angle (−180° to +180°). Click a fifth atom to start again.':chosen.length===3?'A–B–C · angle at B. Select a fourth atom for a dihedral.':chosen.length===2?'B: cycle 1 → 2 → 3 → off · 1/2/3: bond order · D: toggle dash · Blank click / right-click: clear':'Select 3 atoms for an angle, or 4 for a dihedral. Click empty space to clear.';
+    $('selection-note').textContent=chosen.length===4?'Signed dihedral (−180° to +180°). Click a fifth atom to start again.':chosen.length===3?'Angle at the second atom. Select a fourth atom for a dihedral.':chosen.length===2?'B: cycle 1 → 2 → 3 → off · 1/2/3: bond order · D: toggle dash · Blank click / right-click: clear':'Select 3 atoms for an angle, or 4 for a dihedral. Click empty space to clear.';
     $('measure-indices').value=chosen.map(i=>i+base).join(', ');
     if(chosen.length===1||chosen.length===2)$('atom-a').value=chosen[0]+base;else $('atom-a').value='';
     if(chosen.length===2) {
@@ -210,7 +210,8 @@
   $('apply-bond').addEventListener('click',safely(()=>{const pair=enteredPair(),type=$('bond-type').value;const bond=C.validateBond({...pair,order:type==='d'?1:Number(type),dashed:type==='d'},atoms());state.selection=[bond.a,bond.b];changeBonds(C.mergeBonds(state.bonds,[bond],atoms()),'Bond updated. Coordinates are unchanged.');}));
   $('remove-bond').addEventListener('click',safely(()=>{const pair=C.validateBond(enteredPair(),atoms()),k=C.key(pair.a,pair.b),next=state.bonds.filter(b=>C.key(b.a,b.b)!==k);if(next.length===state.bonds.length)throw new Error('There is no bond between those atoms.');state.selection=[pair.a,pair.b];changeBonds(next,'Bond removed.');}));
   $('apply-batch').addEventListener('click',safely(()=>{const add=C.parseBondText($('bond-spec').value,atoms(),state.settings.indexBase);if(!add.length)throw new Error('Enter at least one bond.');changeBonds(C.mergeBonds(state.bonds,add,atoms()),`${add.length} bond definitions applied.`);}));
-  $('undo-bonds').addEventListener('click',()=>{if(!state.history.length)return;state.bonds=state.history.pop();draw();bondsUI();selectionUI();status('Bond edit undone.');});
+  function undoBonds(){if(!validInput||!state.history.length)return;state.bonds=state.history.pop();draw();bondsUI();selectionUI();status('Bond edit undone.');}
+  $('undo-bonds').addEventListener('click',undoBonds);
   $('clear-bonds').addEventListener('click',()=>changeBonds([],'Bonds cleared. Use Undo edit to restore them.'));
   $('auto-bonds').addEventListener('click',safely(()=>{const result=C.inferBonds(atoms(),state.settings.autoScale);changeBonds(result.bonds,result.warnings.join(' ')||'Bonds estimated from distance and neutral valence. Review aromatic, charged, and TS structures.');}));
   $('fit-view').addEventListener('click',()=>scene?.fit());$('reset-view').addEventListener('click',()=>scene?.reset());
@@ -218,6 +219,7 @@
   document.addEventListener('keydown',safely(event=>{
     const key=window.MoleculeInteraction.shortcutKey(event,$('export-dialog').open);
     if(!key)return;
+    if(key==='undo'){event.preventDefault();undoBonds();return;}
     if(key==='f'){event.preventDefault();scene?.fit();return;}
     if(key==='n'){event.preventDefault();toggleLabels();return;}
     if(!validInput||state.selection.length!==2)return;

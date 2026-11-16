@@ -63,10 +63,11 @@ h3,.subsection summary{font-size:15px}
 @media(max-width:720px){.topbar{height:74px;padding:0 16px}.brand h1{font-size:20px}.header-actions .button{font-size:12px;padding:10px}.brand svg{display:none}.app-layout{height:auto;min-height:0}.panel{padding:24px 22px}.tabs{padding:8px 22px 0}.workspace{height:52dvh;min-height:320px}.canvas-bottom{bottom:18px;right:16px}.status-toast{bottom:72px;left:16px;max-width:calc(100% - 32px)}.element-colors{grid-template-columns:repeat(3,1fr)}}
 
 /* Selection details stay at the lower-left edge and never intercept gestures. */
-.selection-readout{position:absolute;left:24px;bottom:24px;z-index:3;max-width:calc(100% - 300px);pointer-events:none;color:#294b48;font-size:12px;line-height:1.55;text-shadow:0 0 3px #fff,0 0 6px #fff;overflow-wrap:anywhere}
-.selection-readout strong{font-size:13px;font-weight:600}
+.selection-readout{position:absolute;left:24px;bottom:24px;z-index:3;max-width:calc(100% - 300px);pointer-events:none;color:#294b48;font-size:14px;line-height:1.55;text-shadow:0 0 3px #fff,0 0 6px #fff;overflow-wrap:anywhere}
+.selection-readout strong{display:block;font-size:15px;font-weight:600;margin-top:3px}
+.selection-readout #selection-distance{font-size:17px;font-weight:650;margin:0 0 3px}
 .selection-readout p{margin:3px 0 0}
-#selection-note{font-size:11px}
+#selection-note{font-size:12px}
 .workspace:has(.selection-readout:not([hidden])) .status-toast{bottom:140px}
 @media(max-width:1100px){.selection-readout{left:16px;bottom:70px;max-width:calc(100% - 32px)}.workspace:has(.selection-readout:not([hidden])) .status-toast{bottom:190px}}
 </style>
@@ -120,7 +121,7 @@ h3,.subsection summary{font-size:15px}
         <div class="bond-editor"><label>Atom A<input id="atom-a" type="number" min="0" step="1" placeholder="0"></label><span class="bond-link">—</span><label>Atom B<input id="atom-b" type="number" min="0" step="1" placeholder="1"></label><label class="bond-type">Type<select id="bond-type"><option value="1">Single</option><option value="2">Double</option><option value="3">Triple</option><option value="d">Dashed / TS</option></select></label></div>
         <div class="button-pair"><button id="apply-bond" class="button primary compact">Apply bond</button><button id="remove-bond" class="button secondary compact">Remove bond</button></div>
         <div class="subsection"><div class="section-heading"><h3>Geometry measurements</h3></div><label class="stack-field" for="measure-indices">Atom indices, in selection order<input id="measure-indices" type="text" placeholder="0, 1, 2, 3" autocomplete="off"></label><button id="measure-atoms" class="button secondary compact measure-button">Measure atoms</button><p class="hint">2 atoms: distance · 3: angle at the middle atom · 4: signed dihedral (−180° to +180°).</p></div>
-        <div class="subsection"><div class="section-heading"><h3>Bond list</h3><button id="undo-bonds" class="text-button" disabled>Undo edit</button></div><div id="bond-list" class="bond-list" aria-label="Existing bonds"></div></div>
+        <div class="subsection"><div class="section-heading"><h3>Bond list</h3><button id="undo-bonds" class="text-button" title="Undo bond edit (Ctrl+Z / ⌘Z)" aria-keyshortcuts="Control+z Meta+z" disabled>Undo edit</button></div><div id="bond-list" class="bond-list" aria-label="Existing bonds"></div></div>
         <details class="subsection"><summary>Batch edit</summary><label class="sr-only" for="bond-spec">Bond definitions</label><textarea id="bond-spec" rows="3" spellcheck="false" placeholder="0-1:2, 1-2:d"></textarea><p class="hint">Use :2 or :3 for multiple bonds, :d for dashed. Unlisted bonds stay unchanged.</p><button id="apply-batch" class="button secondary compact">Apply batch</button></details>
         <details class="subsection"><summary>Automatic bonds</summary><p class="hint">Estimates single, double, and triple bonds for common neutral organic structures. Review aromatic, charged, and TS structures. Unsupported elements keep single bonds. Replaces the current bond list.</p><label class="range-field"><span>Distance tolerance <output id="autoScale-value">1.20×</output></span><input id="autoScale" data-setting="autoScale" type="range" min=".8" max="1.6" step=".01" value="1.2"></label><div class="button-pair"><button id="auto-bonds" class="button secondary compact">Auto-detect</button><button id="clear-bonds" class="button secondary compact danger">Clear bonds</button></div></details>
       </section>
@@ -130,7 +131,7 @@ h3,.subsection summary{font-size:15px}
       <div id="viewer" aria-label="3D molecular structure"></div>
       <div id="webgl-error" class="canvas-error" hidden><h2>3D graphics could not start</h2><p>Enable hardware acceleration in your browser and reload. This viewer needs WebGL.</p><p id="webgl-detail"></p></div>
       <div id="drop-overlay" class="drop-overlay" hidden><strong>Drop your structure here</strong><span>.xyz · .txt · session .json</span></div>
-      <div class="selection-readout" id="selection-card" hidden><strong id="selection-text"></strong><p id="selection-distance" role="status" aria-live="polite"></p><p id="selection-note"></p></div>
+      <div class="selection-readout" id="selection-card" hidden><p id="selection-distance" role="status" aria-live="polite"></p><strong id="selection-text"></strong><p id="selection-note"></p></div>
       <div class="canvas-bottom"><div class="view-presets" aria-label="View orientation"><button data-view="front" title="View along Z">XY</button><button data-view="top" title="View along Y">XZ</button><button data-view="side" title="View along X">YZ</button><button id="reset-view" title="Restore the fitted starting view">Reset</button></div></div>
       <div id="status" class="status-toast" role="status" aria-live="polite" hidden></div>
     </section>
@@ -637,9 +638,13 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     return ()=>input.removeEventListener('keydown',escape);
   }
   function shortcutKey(event,dialogOpen=false) {
-    if(dialogOpen||event.defaultPrevented||event.repeat||event.ctrlKey||event.metaKey||event.altKey)return null;
+    if(dialogOpen||event.defaultPrevented||event.repeat||event.altKey)return null;
     const target=event.target;
     if(target?.isContentEditable||target?.closest?.('input, textarea, select, [role="textbox"]'))return null;
+    if(event.ctrlKey||event.metaKey) {
+      const undo=event.code==='KeyZ'||['z','ㅋ'].includes((event.key||'').toLowerCase());
+      return undo&&!event.shiftKey?'undo':null;
+    }
     // Physical keys remain stable when a Korean IME reports Hangul or Process.
     // Editable targets were excluded above, so this never consumes text input.
     const physical={KeyB:'b',KeyD:'d',KeyF:'f',KeyN:'n',Digit1:'1',Digit2:'2',Digit3:'3',Numpad1:'1',Numpad2:'2',Numpad3:'3'}[event.code];
@@ -892,10 +897,10 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   function selectionUI() {
     const base=state.settings.indexBase,chosen=state.selection;
     $('selection-card').hidden=chosen.length===0;
-    $('selection-text').textContent=chosen.map((i,k)=>`${'ABCD'[k]}: ${atoms()[i].elem}${i+base}`).join(' → ');
+    $('selection-text').textContent=chosen.map(i=>`${atoms()[i].elem}${i+base}`).join(' → ');
     const measurement=chosen.length>=2?C.measure(atoms(),chosen):null;
     $('selection-distance').textContent=measurement?`${measurement.kind}: ${measurement.value===null?'undefined (coincident or collinear atoms)':measurement.value.toFixed(chosen.length===2?3:2)+' '+measurement.unit}`:'Select another atom to measure a distance.';
-    $('selection-note').textContent=chosen.length===4?'A–B–C–D · signed angle (−180° to +180°). Click a fifth atom to start again.':chosen.length===3?'A–B–C · angle at B. Select a fourth atom for a dihedral.':chosen.length===2?'B: cycle 1 → 2 → 3 → off · 1/2/3: bond order · D: toggle dash · Blank click / right-click: clear':'Select 3 atoms for an angle, or 4 for a dihedral. Click empty space to clear.';
+    $('selection-note').textContent=chosen.length===4?'Signed dihedral (−180° to +180°). Click a fifth atom to start again.':chosen.length===3?'Angle at the second atom. Select a fourth atom for a dihedral.':chosen.length===2?'B: cycle 1 → 2 → 3 → off · 1/2/3: bond order · D: toggle dash · Blank click / right-click: clear':'Select 3 atoms for an angle, or 4 for a dihedral. Click empty space to clear.';
     $('measure-indices').value=chosen.map(i=>i+base).join(', ');
     if(chosen.length===1||chosen.length===2)$('atom-a').value=chosen[0]+base;else $('atom-a').value='';
     if(chosen.length===2) {
@@ -1036,7 +1041,8 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   $('apply-bond').addEventListener('click',safely(()=>{const pair=enteredPair(),type=$('bond-type').value;const bond=C.validateBond({...pair,order:type==='d'?1:Number(type),dashed:type==='d'},atoms());state.selection=[bond.a,bond.b];changeBonds(C.mergeBonds(state.bonds,[bond],atoms()),'Bond updated. Coordinates are unchanged.');}));
   $('remove-bond').addEventListener('click',safely(()=>{const pair=C.validateBond(enteredPair(),atoms()),k=C.key(pair.a,pair.b),next=state.bonds.filter(b=>C.key(b.a,b.b)!==k);if(next.length===state.bonds.length)throw new Error('There is no bond between those atoms.');state.selection=[pair.a,pair.b];changeBonds(next,'Bond removed.');}));
   $('apply-batch').addEventListener('click',safely(()=>{const add=C.parseBondText($('bond-spec').value,atoms(),state.settings.indexBase);if(!add.length)throw new Error('Enter at least one bond.');changeBonds(C.mergeBonds(state.bonds,add,atoms()),`${add.length} bond definitions applied.`);}));
-  $('undo-bonds').addEventListener('click',()=>{if(!state.history.length)return;state.bonds=state.history.pop();draw();bondsUI();selectionUI();status('Bond edit undone.');});
+  function undoBonds(){if(!validInput||!state.history.length)return;state.bonds=state.history.pop();draw();bondsUI();selectionUI();status('Bond edit undone.');}
+  $('undo-bonds').addEventListener('click',undoBonds);
   $('clear-bonds').addEventListener('click',()=>changeBonds([],'Bonds cleared. Use Undo edit to restore them.'));
   $('auto-bonds').addEventListener('click',safely(()=>{const result=C.inferBonds(atoms(),state.settings.autoScale);changeBonds(result.bonds,result.warnings.join(' ')||'Bonds estimated from distance and neutral valence. Review aromatic, charged, and TS structures.');}));
   $('fit-view').addEventListener('click',()=>scene?.fit());$('reset-view').addEventListener('click',()=>scene?.reset());
@@ -1044,6 +1050,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   document.addEventListener('keydown',safely(event=>{
     const key=window.MoleculeInteraction.shortcutKey(event,$('export-dialog').open);
     if(!key)return;
+    if(key==='undo'){event.preventDefault();undoBonds();return;}
     if(key==='f'){event.preventDefault();scene?.fit();return;}
     if(key==='n'){event.preventDefault();toggleLabels();return;}
     if(!validInput||state.selection.length!==2)return;

@@ -81,6 +81,7 @@ you move between frames.
 | Cycle single → double → triple → no bond between two selected atoms | **B** |
 | Set single, double, or triple bond between two selected atoms | **1**, **2**, **3** |
 | Toggle a dashed bond between two selected atoms | **D** |
+| Undo a bond edit | **Ctrl+Z** / **⌘Z** |
 
 Zoom is limited to 0.25×–4× the fitted view (subject to the renderer’s near
 camera limit). Limits adapt to the structure; Fit returns to the default scale.
@@ -94,7 +95,8 @@ cycles single → double → triple → no bond, starting at single if absent or
 dashed. **1**, **2**, and **3** set the corresponding solid bond directly.
 **D** replaces a solid bond with a dashed bond (or creates one if absent);
 pressing **D** again removes it. These edits support
-**Undo edit**. Selection details appear as text at the lower-left of the viewer.
+**Undo edit** or **Ctrl+Z / ⌘Z**, up to 30 edits. Undo inside a text field
+remains the browser’s text undo. Selection details appear as text at the lower-left of the viewer.
 
 Atoms are measured in selection order: **A–B** for a distance, **A–B–C** for
 an angle at B, and **A–B–C–D** for a signed dihedral in the range −180° to

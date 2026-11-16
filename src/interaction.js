@@ -68,9 +68,13 @@
     return ()=>input.removeEventListener('keydown',escape);
   }
   function shortcutKey(event,dialogOpen=false) {
-    if(dialogOpen||event.defaultPrevented||event.repeat||event.ctrlKey||event.metaKey||event.altKey)return null;
+    if(dialogOpen||event.defaultPrevented||event.repeat||event.altKey)return null;
     const target=event.target;
     if(target?.isContentEditable||target?.closest?.('input, textarea, select, [role="textbox"]'))return null;
+    if(event.ctrlKey||event.metaKey) {
+      const undo=event.code==='KeyZ'||['z','ㅋ'].includes((event.key||'').toLowerCase());
+      return undo&&!event.shiftKey?'undo':null;
+    }
     // Physical keys remain stable when a Korean IME reports Hangul or Process.
     // Editable targets were excluded above, so this never consumes text input.
     const physical={KeyB:'b',KeyD:'d',KeyF:'f',KeyN:'n',Digit1:'1',Digit2:'2',Digit3:'3',Numpad1:'1',Numpad2:'2',Numpad3:'3'}[event.code];

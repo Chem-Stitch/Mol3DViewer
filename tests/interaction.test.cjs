@@ -93,3 +93,16 @@ test('Escape transfers coordinate focus without changing input contents',()=>{
   assert.ok(focused&&prevented&&stopped);assert.equal(input.value,'C 0 0 0');
   cleanup();assert.equal(listener,null);
 });
+
+test('bond undo supports Ctrl/Cmd+Z and Korean layout without overriding text undo or redo',()=>{
+  for(const modifier of ['ctrlKey','metaKey']) {
+    for(const keyboard of [{key:'z'},{key:'ㅋ'},{key:'Process',code:'KeyZ',isComposing:true}]) {
+      const event={...keyboard,[modifier]:true};
+      assert.equal(shortcutKey(event),'undo');
+      for(const flag of ['shiftKey','altKey','repeat','defaultPrevented'])assert.equal(shortcutKey({...event,[flag]:true}),null);
+      assert.equal(shortcutKey(event,true),null);
+      for(const target of [{isContentEditable:true},{closest:()=>({})}])assert.equal(shortcutKey({...event,target}),null);
+    }
+  }
+  assert.equal(shortcutKey({key:'z',code:'KeyZ'}),null);
+});
