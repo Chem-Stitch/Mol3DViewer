@@ -5,6 +5,9 @@
   const C = window.MoleculeCore;
   const L = window.MoleculeLabels;
   const FIT_ZOOM = 1.3;
+  // 3Dmol 2.5.5's default camera Z; limits are camera-to-model distances.
+  const CAMERA_Z = 150;
+  const MIN_ZOOM = .25, MAX_ZOOM = 4;
   function shading(viewer,s) {
     // Pinned 3Dmol 2.5.5's renderer reads `scale` in enableAmbientOcclusion,
     // although GLViewer.setViewStyle forwards `radius`. Pass both through the
@@ -87,8 +90,8 @@
       this.data=data;
       populate(this.viewer,data,this.onPick);
       this.viewer.setBackgroundColor(data.settings.background,1);
-      if(saved)this.viewer.setView(saved);
-      else {this.viewer.zoomTo();this.viewer.zoom(FIT_ZOOM);}
+      this.fitZoom();
+      if(saved){this.viewer.setView(saved);this.viewer.setZoomLimits(...this.zoomLimits);}
       if(fit||!this.initialView)this.initialView=this.viewer.getView().slice();
       this.viewer.render();
       this.refreshLabels();
@@ -103,7 +106,15 @@
       this.data.settings=settings;shading(this.viewer,settings);this.viewer.render();
     }
     setSelection(selected) {if(this.data){this.data.selected=selected;this.refreshLabels();}}
-    fit() {if(!this.data)return;this.viewer.zoomTo();this.viewer.zoom(FIT_ZOOM);this.viewer.render();}
+    fitZoom() {
+      // Remove old bounds before measuring a new structure's fitted view.
+      this.viewer.setZoomLimits(0,Infinity);
+      this.viewer.zoomTo();this.viewer.zoom(FIT_ZOOM);
+      const distance=Math.max(1,CAMERA_Z-this.viewer.getView()[3]);
+      this.zoomLimits=[Math.max(1,distance/MAX_ZOOM),distance/MIN_ZOOM];
+      this.viewer.setZoomLimits(...this.zoomLimits);
+    }
+    fit() {if(!this.data)return;this.fitZoom();this.viewer.render();}
     reset() {if(this.initialView)this.viewer.setView(this.initialView.slice());this.viewer.render();}
     preset(name) {
       if(!this.data)return;

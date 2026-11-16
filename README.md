@@ -81,6 +81,9 @@ you move between frames.
 | Set single, double, or triple bond between two selected atoms | **1**, **2**, **3** |
 | Toggle a dashed bond between two selected atoms | **D** |
 
+Zoom is limited to 0.25×–4× the fitted view (subject to the renderer’s near
+camera limit). Limits adapt to the structure; Fit returns to the default scale.
+
 Click the molecule canvas after editing coordinates to move keyboard focus back
 to the viewer.
 
