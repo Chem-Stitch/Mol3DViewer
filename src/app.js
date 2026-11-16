@@ -196,6 +196,7 @@
   $('toggle-labels').addEventListener('click',toggleLabels);
   $('reset-style').addEventListener('click',()=>{const {indexBase,autoScale,exportSize,transparent}=state.settings;state.settings={...C.clone(C.DEFAULTS),indexBase,autoScale,exportSize,transparent};updateOutputs();palette();draw();status('Figure style reset.');});
   $('index-base').addEventListener('change',()=>{state.settings.indexBase=Number($('index-base').value);selectionUI();bondsUI();scene?.setSelection(state.selection);$('bond-spec').value='';status(`Atom numbering now starts at ${state.settings.indexBase}.`);});
+  window.MoleculeInteraction.bindEscapeFocus($('coordinates'),$('workspace'));
   $('coordinates').addEventListener('input',queueCoordinates);
   $('coordinates').addEventListener('compositionend',queueCoordinates);
   $('units').addEventListener('change',applyLiveCoordinates);

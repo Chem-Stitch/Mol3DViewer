@@ -60,11 +60,26 @@
     element.addEventListener('pointerdown',focus,true);
     return ()=>element.removeEventListener('pointerdown',focus,true);
   }
+  function bindEscapeFocus(input,focusTarget) {
+    const escape=event=>{
+      if(event.key!=='Escape'&&event.code!=='Escape')return;
+      event.preventDefault();event.stopPropagation();
+      focusTarget.focus({preventScroll:true});
+    };
+    input.addEventListener('keydown',escape);
+    return ()=>input.removeEventListener('keydown',escape);
+  }
   function shortcutKey(event,dialogOpen=false) {
-    if(dialogOpen||event.defaultPrevented||event.repeat||event.isComposing||event.ctrlKey||event.metaKey||event.altKey)return null;
+    if(dialogOpen||event.defaultPrevented||event.repeat||event.ctrlKey||event.metaKey||event.altKey)return null;
     const target=event.target;
     if(target?.isContentEditable||target?.closest?.('input, textarea, select, [role="textbox"]'))return null;
-    const key=event.key.toLowerCase();
+    // Physical keys remain stable when a Korean IME reports Hangul or Process.
+    // Editable targets were excluded above, so this never consumes text input.
+    const physical={KeyB:'b',KeyD:'d',KeyF:'f',KeyN:'n',Digit1:'1',Digit2:'2',Digit3:'3',Numpad1:'1',Numpad2:'2',Numpad3:'3'}[event.code];
+    if(physical)return physical;
+    if(event.isComposing)return null;
+    const raw=(event.key||'').toLowerCase();
+    const key=({'ㅠ':'b','ㅇ':'d','ㄹ':'f','ㅜ':'n'})[raw]||raw;
     return ['f','b','d','n','1','2','3'].includes(key)?key:null;
   }
   // null means remove the selected bond; numeric keys always set a solid bond.
@@ -76,6 +91,6 @@
     if(['1','2','3'].includes(key))return {order:Number(key),dashed:false};
     throw new Error('Unknown bond shortcut.');
   }
-  return {bindSelectionReset,bindBlankClick,bindViewerFocus,shortcutKey,bondShortcut};
+  return {bindSelectionReset,bindBlankClick,bindViewerFocus,bindEscapeFocus,shortcutKey,bondShortcut};
 });
 

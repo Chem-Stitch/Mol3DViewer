@@ -84,8 +84,9 @@ you move between frames.
 Zoom is limited to 0.25×–4× the fitted view (subject to the renderer’s near
 camera limit). Limits adapt to the structure; Fit returns to the default scale.
 
-Click the molecule canvas after editing coordinates to move keyboard focus back
-to the viewer.
+Click the molecule canvas or press **Esc** in the coordinate field to move
+keyboard focus back to the viewer. Shortcuts use physical key positions, so
+**B/D/F/N** also work with a Korean keyboard input mode (**ㅠ/ㅇ/ㄹ/ㅜ**).
 
 Shortcuts are inactive while typing or while the export dialog is open. **B**
 cycles single → double → triple → no bond, starting at single if absent or

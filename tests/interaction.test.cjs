@@ -68,3 +68,26 @@ test('blank clicks clear after picking, but atom clicks, drags and outside relea
   await Promise.resolve();assert.equal(clears,1);
   binding.destroy();assert.deepEqual(element.listeners,{});assert.deepEqual(doc.listeners,{});
 });
+
+test('Korean keyboard shortcuts work outside editable fields, including IME Process events',()=>{
+  for(const [code,key,result] of [['KeyB','ㅠ','b'],['KeyD','ㅇ','d'],['KeyF','ㄹ','f'],['KeyN','ㅜ','n']]) {
+    assert.equal(shortcutKey({code,key}),result);
+    assert.equal(shortcutKey({key}),result);
+    assert.equal(shortcutKey({code,key:'Process',isComposing:true}),result);
+    for(const target of [{isContentEditable:true},{closest:()=>({})}])
+      assert.equal(shortcutKey({code,key,isComposing:true,target}),null);
+    assert.equal(shortcutKey({code,key,ctrlKey:true}),null);
+    assert.equal(shortcutKey({code,key},true),null);
+  }
+});
+
+test('Escape transfers coordinate focus without changing input contents',()=>{
+  const {bindEscapeFocus}=require('../src/interaction.js');
+  let listener,focused=false,prevented=false,stopped=false;
+  const input={value:'C 0 0 0',addEventListener(type,fn){assert.equal(type,'keydown');listener=fn;},removeEventListener(){listener=null;}};
+  const cleanup=bindEscapeFocus(input,{focus(options){assert.deepEqual(options,{preventScroll:true});focused=true;}});
+  listener({key:'f'});assert.equal(focused,false);
+  listener({key:'Escape',preventDefault(){prevented=true;},stopPropagation(){stopped=true;}});
+  assert.ok(focused&&prevented&&stopped);assert.equal(input.value,'C 0 0 0');
+  cleanup();assert.equal(listener,null);
+});
