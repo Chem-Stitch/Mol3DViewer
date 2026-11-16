@@ -4,7 +4,7 @@
   'use strict';
   const C = window.MoleculeCore;
   const L = window.MoleculeLabels;
-  const FIT_ZOOM = 1.3;
+  const FIT_ZOOM = 1.43;
   // 3Dmol 2.5.5's default camera Z; limits are camera-to-model distances.
   const CAMERA_Z = 150;
   const MIN_ZOOM = .25, MAX_ZOOM = 4;

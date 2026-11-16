@@ -12,7 +12,7 @@
   const COLORS = {H:'#eeeeea',C:'#35454e',N:'#2868c8',O:'#df4148',F:'#69b98b',P:'#dfa04e',S:'#d8bb4d',Cl:'#51a67a',Br:'#a65e4d',I:'#8864a5',Si:'#bba994',B:'#d0a08a',Se:'#cda45e',Fe:'#ba7d54',Co:'#a28db7',Ni:'#71a28a',Cu:'#b77c52',Zn:'#93a5bc',Pd:'#a2adbe',Pt:'#adb4bf',Rh:'#98b5c1',Ru:'#8a9eb7',Ag:'#b3bcc6',Au:'#d8b354'};
   const RADII = {H:.175,C:.265,N:.25,O:.25,F:.235,P:.295,S:.295,Se:.315,Cl:.285,Br:.305,I:.335,Pd:.335};
   const MAX_ATOMS = 5000, MAX_FRAMES = 500, MAX_BONDS = 20000;
-  const DEFAULTS = Object.freeze({atomScale:1,bondRadius:.045,dashRadius:.027,dashLength:.15,dashGap:.11,bondColor:'#9ba3a8',dashColor:'#677f88',background:'#ffffff',labels:false,orthographic:true,indexBase:0,autoScale:1.2,elementColors:{},transparent:true,exportSize:2400,ambientOcclusion:true,aoStrength:.45,aoRadius:1.2});
+  const DEFAULTS = Object.freeze({atomScale:1,bondRadius:.045,dashRadius:.027,dashLength:.15,dashGap:.11,bondColor:'#9ba3a8',dashColor:'#677f88',background:'#ffffff',labels:true,orthographic:true,indexBase:0,autoScale:1.2,elementColors:{},transparent:true,exportSize:2400,ambientOcclusion:true,aoStrength:.45,aoRadius:1.2});
   const SHADING_PRESETS = Object.freeze({basic:{ambientOcclusion:false,aoStrength:.45,aoRadius:1.2},soft:{ambientOcclusion:true,aoStrength:.45,aoRadius:1.2},strong:{ambientOcclusion:true,aoStrength:.9,aoRadius:2}});
   const clone = v => JSON.parse(JSON.stringify(v));
   const distance = (a,b) => Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);

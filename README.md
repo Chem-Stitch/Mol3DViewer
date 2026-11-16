@@ -27,7 +27,8 @@ account, Python environment, or server-side calculation is required.
   edit pairs individually or in batches and undo recent bond edits.
 - **Geometry measurements:** select two atoms for a distance, three for a
   bond angle, or four for a signed dihedral angle.
-- **Atom indices:** toggle labels and choose 0-based or 1-based numbering.
+- **Atom indices:** shown by default; toggle labels with **N** and choose
+  0-based or 1-based numbering.
   Labels are drawn at the display or export resolution.
 - **Figure export:** save transparent or opaque PNGs with a long edge of
   1200, 2400, or 3600 pixels while retaining the current view and aspect ratio.
@@ -119,7 +120,8 @@ are preserved; repeated definitions replace the existing type for that pair.
 - Use **Soft depth** for subtle AO or **Strong depth** for deeper shading;
   **Shadow strength** and **Shadow range** provide further control. **Basic**
   uses standard lighting without the additional AO pass.
-- Enable **Atom indices** before export if labels should appear in the PNG.
+- **Atom indices** are enabled by default and included in PNG export. Toggle
+  them off before export if you want a figure without labels.
   Selection-order badges used during editing are excluded from exported images.
 - Choose a **transparent background** to place the molecule into a figure
   panel in Illustrator, Inkscape, PowerPoint, or a similar editor.
