@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="A local-first molecular figure editor. Open XYZ structures, edit transition-state bonds, and export publication-ready PNG images.">
+  <meta name="theme-color" content="#137d78">
+  <title>Mol3DViewer</title>
+  
+  <link rel="stylesheet" href="styles.css">
+  
+  
+  
+  
+  
+  
+</head>
+<body>
+  <a class="skip-link" href="#workspace">Skip to molecule viewer</a>
+  <header class="topbar">
+    <div class="brand"><svg aria-hidden="true" viewBox="0 0 36 36"><path d="M10 10l17 7-12 13z"/><circle cx="10" cy="10" r="5"/><circle cx="27" cy="17" r="4"/><circle cx="15" cy="30" r="3.5"/></svg><div><h1>Mol3DViewer</h1></div></div>
+    <div class="header-actions"><button id="open-file" class="button secondary"><span aria-hidden="true">＋</span> Open file</button><button id="open-export" class="button primary">Export PNG <span aria-hidden="true">↗</span></button></div>
+  </header>
+  <main class="app-layout">
+    <aside class="sidebar" aria-label="Molecule controls">
+      <nav class="tabs" role="tablist" aria-label="Editor panels"><button id="tab-structure" role="tab" aria-selected="true" aria-controls="panel-structure" data-tab="structure">Structure</button><button id="tab-style" role="tab" aria-selected="false" aria-controls="panel-style" data-tab="style">Style</button><button id="tab-bonds" role="tab" aria-selected="false" aria-controls="panel-bonds" data-tab="bonds">Bonds</button></nav>
+      <section id="panel-structure" class="panel" role="tabpanel" aria-labelledby="tab-structure">
+        <div class="section-heading"><h3>Coordinates</h3></div>
+        <label class="sr-only" for="coordinates">Molecular coordinates</label><textarea id="coordinates" spellcheck="false" rows="14" aria-describedby="coordinate-error" placeholder="Paste XYZ coordinates"></textarea>
+        <div class="inline-controls"><label class="inline-label" for="units">Input units <select id="units"><option value="angstrom">Ångström</option><option value="bohr">Bohr</option></select></label></div>
+        <p id="coordinate-error" class="coordinate-error" role="status" aria-live="polite" hidden></p>
+        <div id="trajectory-controls" class="subsection" hidden><div class="section-heading"><h3>Trajectory frame</h3><output id="frame-value">1 / 1</output></div><input id="frame-slider" type="range" min="0" max="0" value="0" aria-label="Trajectory frame"><p class="hint">Bonds stay fixed across frames. Use Auto-detect if you want to infer them again.</p></div>
+        <details class="subsection examples"><summary>Examples</summary><div class="example-grid"><button data-example="ts" class="example-button"><span class="example-dots">● <i>●</i> ●</span><strong>TS illustration</strong><small>Partial bonds</small></button><button data-example="palladium" class="example-button"><span class="example-dots metal">● <i>●</i> ●</span><strong>Pd complex</strong><small>Coordination bonds</small></button><button data-example="water" class="example-button"><span class="example-dots water">● <i>●</i> ●</span><strong>Water</strong><small>Simple structure</small></button></div><p id="example-note" class="hint">TS and Pd examples are illustrative, not optimized.</p></details>
+        <div class="subsection"><div class="section-heading"><h3>Project files</h3></div><div class="button-pair"><button id="save-session" class="button secondary compact">Save session</button><button id="save-xyz" class="button secondary compact">Download XYZ</button></div></div>
+      </section>
+      <section id="panel-style" class="panel" role="tabpanel" aria-labelledby="tab-style" hidden>
+        <div class="section-heading"><h3>Ball & stick</h3><button id="reset-style" class="text-button">Reset style</button></div>
+        <label class="range-field"><span>Atom size <output id="atomScale-value">1.00×</output></span><input id="atomScale" data-setting="atomScale" type="range" min=".35" max="2" step=".01" value="1"></label>
+        <label class="range-field"><span>Bond radius <output id="bondRadius-value">0.045 Å</output></span><input id="bondRadius" data-setting="bondRadius" type="range" min=".012" max=".15" step=".001" value=".045"></label>
+        <label class="color-row">Bond color <input id="bondColor" data-color="bondColor" type="color" value="#9ba3a8"></label>
+        <div class="subsection"><div class="section-heading"><h3>Surface shading</h3></div>
+        <label class="stack-field" for="shading-preset">Shading preset<select id="shading-preset"><option value="basic">Basic — standard lighting</option><option value="soft" selected>Soft depth — subtle shadows</option><option value="strong">Strong depth — deeper shadows</option><option value="custom" disabled>Custom</option></select></label>
+        <label class="check-row"><input id="ambient-occlusion" type="checkbox" checked><span>Ambient occlusion (AO)</span></label>
+        <label class="range-field"><span>Shadow strength <output id="aoStrength-value">0.45</output></span><input id="aoStrength" data-setting="aoStrength" type="range" min=".05" max="1.5" step=".05" value=".45"></label>
+        <label class="range-field"><span>Shadow range <output id="aoRadius-value">1.20 Å</output></span><input id="aoRadius" data-setting="aoRadius" type="range" min=".1" max="5" step=".1" value="1.2"></label>
+        </div>
+        <div class="subsection"><div class="section-heading"><h3>Transition-state bonds</h3></div>
+        <label class="range-field"><span>Dash radius <output id="dashRadius-value">0.027 Å</output></span><input id="dashRadius" data-setting="dashRadius" type="range" min=".008" max=".1" step=".001" value=".027"></label>
+        <label class="range-field"><span>Dash length <output id="dashLength-value">0.15 Å</output></span><input id="dashLength" data-setting="dashLength" type="range" min=".04" max=".5" step=".01" value=".15"></label>
+        <label class="range-field"><span>Gap length <output id="dashGap-value">0.11 Å</output></span><input id="dashGap" data-setting="dashGap" type="range" min=".025" max=".5" step=".005" value=".11"></label>
+        <label class="color-row">Dash color <input id="dashColor" data-color="dashColor" type="color" value="#677f88"></label></div>
+        <div class="subsection"><div class="section-heading"><h3>Element palette</h3></div><div id="element-colors" class="element-colors"></div></div>
+        <div class="subsection"><h3>Canvas</h3><label class="color-row">Background <input id="background" data-color="background" type="color" value="#ffffff"></label><label class="check-row"><input type="checkbox" id="orthographic" checked><span>Orthographic projection</span></label></div>
+      </section>
+      <section id="panel-bonds" class="panel" role="tabpanel" aria-labelledby="tab-bonds" hidden>
+        <div class="section-heading"><h3>Edit a bond</h3><select id="index-base" aria-label="Atom index numbering"><option value="0">0-based indices</option><option value="1">1-based indices</option></select></div>
+        <p class="hint">Click two atoms to edit a bond. Select 3 for an angle or 4 for a dihedral, in order.</p>
+        <div class="bond-editor"><label>Atom A<input id="atom-a" type="number" min="0" step="1" placeholder="0"></label><span class="bond-link">—</span><label>Atom B<input id="atom-b" type="number" min="0" step="1" placeholder="1"></label><label class="bond-type">Type<select id="bond-type"><option value="1">Single</option><option value="2">Double</option><option value="3">Triple</option><option value="d">Dashed / TS</option></select></label></div>
+        <div class="button-pair"><button id="apply-bond" class="button primary compact">Apply bond</button><button id="remove-bond" class="button secondary compact">Remove bond</button></div>
+        <div class="subsection"><div class="section-heading"><h3>Geometry measurements</h3></div><label class="stack-field" for="measure-indices">Atom indices, in selection order<input id="measure-indices" type="text" placeholder="0, 1, 2, 3" autocomplete="off"></label><button id="measure-atoms" class="button secondary compact measure-button">Measure atoms</button><p class="hint">2 atoms: distance · 3: angle at the middle atom · 4: signed dihedral (−180° to +180°).</p></div>
+        <div class="subsection"><div class="section-heading"><h3>Bond list</h3><button id="undo-bonds" class="text-button" disabled>Undo edit</button></div><div id="bond-list" class="bond-list" aria-label="Existing bonds"></div></div>
+        <details class="subsection"><summary>Batch edit</summary><label class="sr-only" for="bond-spec">Bond definitions</label><textarea id="bond-spec" rows="3" spellcheck="false" placeholder="0-1:2, 1-2:d"></textarea><p class="hint">Use :2 or :3 for multiple bonds, :d for dashed. Unlisted bonds stay unchanged.</p><button id="apply-batch" class="button secondary compact">Apply batch</button></details>
+        <details class="subsection"><summary>Automatic bonds</summary><p class="hint">Distance-based single bonds only. Check metal coordination and TS bonds manually. This replaces the current bond list.</p><label class="range-field"><span>Distance tolerance <output id="autoScale-value">1.20×</output></span><input id="autoScale" data-setting="autoScale" type="range" min=".8" max="1.6" step=".01" value="1.2"></label><div class="button-pair"><button id="auto-bonds" class="button secondary compact">Auto-detect</button><button id="clear-bonds" class="button secondary compact danger">Clear bonds</button></div></details>
+      </section>
+    </aside>
+    <section class="workspace" id="workspace" aria-label="Interactive molecule viewer" tabindex="0">
+      <div class="canvas-top"><div class="canvas-options"><button id="toggle-labels" class="chip" aria-pressed="false">Atom indices</button><button id="fit-view" class="chip">Fit to view <kbd>F</kbd></button></div></div>
+      <div id="viewer" aria-label="3D molecular structure"></div>
+      <div id="webgl-error" class="canvas-error" hidden><h2>3D graphics could not start</h2><p>Enable hardware acceleration in your browser and reload. This viewer needs WebGL.</p><p id="webgl-detail"></p></div>
+      <div id="drop-overlay" class="drop-overlay" hidden><strong>Drop your structure here</strong><span>.xyz · .txt · session .json</span></div>
+      <div class="selection-card" id="selection-card" hidden><div><strong id="selection-text"></strong><button id="clear-selection" class="icon-button" aria-label="Clear atom selection">×</button></div><p id="selection-distance" role="status" aria-live="polite"></p><p id="selection-note" class="hint"></p><button id="edit-selected" class="text-button">Edit this bond →</button></div>
+      <div class="canvas-bottom"><div class="view-presets" aria-label="View orientation"><button data-view="front" title="View along Z">XY</button><button data-view="top" title="View along Y">XZ</button><button data-view="side" title="View along X">YZ</button><button id="reset-view" title="Restore the fitted starting view">Reset</button></div></div>
+      <div id="status" class="status-toast" role="status" aria-live="polite" hidden></div>
+    </section>
+  </main>
+  <input id="file-input" type="file" accept=".xyz,.txt,.json" hidden>
+  <dialog id="export-dialog"><form method="dialog"><button class="dialog-close icon-button" aria-label="Close export dialog">×</button></form><h2>Export PNG</h2><label class="stack-field">File name<input id="export-name" value="molecule.png" maxlength="120"></label><label class="stack-field">Resolution<select id="export-size"><option value="1200">1200 px — quick export</option><option value="2400" selected>2400 px — publication</option><option value="3600">3600 px — large figure</option></select></label><p id="export-dimensions" class="hint"></p><label class="check-row"><input id="transparent-export" type="checkbox" checked><span>Transparent background</span></label><button id="download-png" class="button primary full">Download PNG</button><p id="export-status" class="hint" role="status"></p></dialog>
+  <noscript><div class="fatal">Enable JavaScript to use the molecular viewer.</div></noscript>
+<script type="text/plain" id="third-party-licenses">
+Mol3DViewer MIT license
+MIT License
+
+Copyright (c) 2026 Mol3DViewer contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+3Dmol.js BSD license and bundled notices
+3Dmol.js incorporates code from GLmol, Three.js, and jQuery and
+is licensed under a BSD-3-Clause license.
+
+* 3Dmol.js
+	Copyright (c) 2014, University of Pittsburgh and contributors
+	All rights reserved.
+
+	Redistribution and use in source and binary forms, with or without 
+	modification, are permitted provided that the following conditions are met:
+
+	1. Redistributions of source code must retain the above copyright 
+	notice, this list of conditions and the following disclaimer.
+
+	2. Redistributions in binary form must reproduce the above copyright 
+	notice, this list of conditions and the following disclaimer in the 
+	documentation and/or other materials provided with the distribution.
+
+	3. Neither the name of the copyright holder nor the names of its 
+	contributors may be used to endorse or promote products derived from 
+	this software without specific prior written permission.
+
+	THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
+	"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
+	LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A 
+	PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+	HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
+	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED 
+	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR 
+	PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
+	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
+	NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
+	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+* GLmol
+ GLmol - Molecular Viewer on WebGL/Javascript (0.47)
+  (C) Copyright 2011-2012, biochem_fan
+      License: dual license of MIT or LGPL3
+
+  Contributors:
+    Robert Hanson for parseXYZ, deferred instantiation
+
+
+
+* Three.js 
+     https://github.com/mrdoob/three.js
+
+     Copyright (c) 2010-2012 three.js Authors. All rights reserved.
+
+     Permission is hereby granted, free of charge, to any person obtaining a copy
+     of this software and associated documentation files (the "Software"), to deal
+     in the Software without restriction, including without limitation the rights
+     to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     copies of the Software, and to permit persons to whom the Software is
+     furnished to do so, subject to the following conditions:
+
+     The above copyright notice and this permission notice shall be included in
+     all copies or substantial portions of the Software.
+
+     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     THE SOFTWARE.
+
+* jQuery
+     http://jquery.org/
+
+     Copyright (c) 2011 John Resig
+
+     Permission is hereby granted, free of charge, to any person obtaining
+     a copy of this software and associated documentation files (the
+     "Software"), to deal in the Software without restriction, including
+     without limitation the rights to use, copy, modify, merge, publish,
+     distribute, sublicense, and/or sell copies of the Software, and to
+     permit persons to whom the Software is furnished to do so, subject to
+     the following conditions:
+
+     The above copyright notice and this permission notice shall be
+     included in all copies or substantial portions of the Software.
+
+     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+     MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+     LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+     OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+     WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+/*!
+ * 3dmol v2.5.5
+ * JavaScript/TypeScript molecular visualization library
+ * Author: David Koes and contributors
+ */
+</script>
+<script src="../vendor/3Dmol.min.js"></script>
+<script src="core.js"></script>
+<script src="labels.js"></script>
+<script src="interaction.js"></script>
+<script src="scene.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

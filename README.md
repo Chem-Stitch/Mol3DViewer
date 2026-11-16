@@ -112,24 +112,13 @@ Shading settings are included in both session files and PNG export.
 
 ### Portable HTML
 
-Open **`Mol3DViewer.html`** in a WebGL-enabled browser. The portable file
-contains the rendering library and application assets and can run offline.
+Open the root **`index.html`** or the built **`dist/Mol3DViewer.html`** in a
+WebGL-enabled browser. Both contain all styles, scripts, and the rendering
+library and can run offline. Users only need this one HTML file.
 
-For a simple GitHub Pages site:
+### Development
 
-1. Rename the portable HTML to **`index.html`** and upload it to the root of
-   your repository alongside this README.
-2. In **Settings → Pages**, select **Deploy from a branch**, choose your
-   branch and **`/ (root)`**, then save.
-3. Open the URL shown by GitHub Pages. To update the app, replace the same
-   `index.html` and commit the change.
-
-### Source distribution
-
-Open the source **`index.html`** with its **`assets/`** directory in the same
-location. All runtime dependencies are bundled locally.
-
-For development, use Node.js 22 or later:
+Use Node.js 22 or later. No npm dependency installation is needed.
 
 ```bash
 npm run check
@@ -137,14 +126,42 @@ npm test
 npm run build
 ```
 
-No npm dependency installation is needed. The build creates the static site
-in `dist/` and a portable `dist/Mol3DViewer.html`.
+Edit files in `src/`, then open `src/index.html` directly in a browser and
+reload after changes. Keep `vendor/` next to `src/`; the development page
+loads its rendering library from there.
 
-The included `.github/workflows/pages.yml` can test, build, and deploy the
-source distribution. To use it, select **GitHub Actions** as the Pages source
-and push to `main` or `master`. Choose either this workflow or branch-based
-deployment for your site. If using branch-based deployment with the source
-distribution, disable or remove the included Pages workflow.
+| File | Responsibility |
+| --- | --- |
+| `src/index.html` | UI markup and bundled third-party license notices |
+| `src/styles.css` | Layout and appearance |
+| `src/core.js` | XYZ parsing, bonds, geometry calculations, session validation |
+| `src/scene.js` | WebGL rendering, camera, PNG export |
+| `src/labels.js` | Canvas atom labels |
+| `src/interaction.js` | Mouse gestures |
+| `src/app.js` | Application state, UI events, imports and downloads |
+| `vendor/3Dmol.min.js` | Bundled rendering library; version 2.5.5 |
+| `scripts/build.mjs` | Assemble the portable HTML without external build dependencies |
+| `tests/` | Automated regression tests |
+
+Scripts use classic browser globals and load in the order declared in
+`src/index.html`. Core, labels, and interaction also expose CommonJS exports
+for tests. Add new scripts to that template in dependency order; the build
+inlines its stylesheet and script references automatically.
+
+**Do not edit the root `index.html` or `dist/` directly.** They are generated.
+The build updates the tracked root `index.html` and writes identical copies
+to `dist/index.html` and `dist/Mol3DViewer.html`. Commit source changes and the
+rebuilt root HTML together. `dist/` is ignored by Git.
+
+For GitHub Pages, use **Deploy from a branch**, select your branch and
+**`/ (root)`**. The root HTML retains the existing standalone deployment.
+Alternatively, publish the contents of `dist/` with your hosting service.
+There is no GitHub Actions deployment workflow in this repository.
+
+Before release, run the checks above and open the generated HTML in a
+WebGL-enabled browser. Verify coordinate input, bond edits, rotation,
+measurements, session save/restore, and transparent PNG export. Automated
+core tests do not verify GPU rendering or browser download behavior.
 
 ## Scope and data handling
 
@@ -159,7 +176,7 @@ manually. TS and Pd examples are illustrative rather than optimized structures.
 A browser with working WebGL is required for 3D viewing and PNG export.
 Performance depends on the device, molecule size, labels, and shading settings.
 Input limits are 5000 atoms, 500 frames, 20000 bonds, and 20 MB per file.
-See [VALIDATION.md](VALIDATION.md) for the verification scope.
+See the development section above for the verification scope.
 
 Molecular data are processed in browser memory without being uploaded.
 There are no analytics, external fonts, or runtime CDN dependencies. When
@@ -188,5 +205,5 @@ the blog viewer is acknowledged as a design reference.
 
 Mol3DViewer application code is released under the [MIT License](LICENSE).
 The bundled 3Dmol.js library retains its BSD-3-Clause license and accompanying
-notices. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and the license
-files in `assets/vendor/`.
+notices. Third-party license notices are embedded in `src/index.html` and retained
+in every generated HTML file.
