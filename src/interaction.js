@@ -34,22 +34,20 @@
       if(event.button!==0||!press)return;
       move(event);
       const gesture=press,inside=element.contains(event.target);
-      // The renderer picks atoms synchronously during mouseup. Wait until its
-      // handlers have completed before deciding that this was a blank click.
-      queueMicrotask(()=>{
-        if(press!==gesture)return;
-        cancel();
-        if(inside&&!gesture.moved&&!gesture.picked)onReset();
-      });
+      // 3Dmol picks on body mouseup. Listen on document in the bubble phase,
+      // after that pick. A capture-phase microtask can run BEFORE body listeners
+      // on native browser events and incorrectly clear the previous selection.
+      cancel();
+      if(inside&&!gesture.moved&&!gesture.picked)onReset();
     };
     element.addEventListener('mousedown',down,true);
-    doc.addEventListener('mousemove',move,true);doc.addEventListener('mouseup',up,true);
+    doc.addEventListener('mousemove',move,true);doc.addEventListener('mouseup',up,false);
     win.addEventListener('blur',cancel);
     return {
       markPicked(){if(press)press.picked=true;},
       destroy(){
         element.removeEventListener('mousedown',down,true);
-        doc.removeEventListener('mousemove',move,true);doc.removeEventListener('mouseup',up,true);
+        doc.removeEventListener('mousemove',move,true);doc.removeEventListener('mouseup',up,false);
         win.removeEventListener('blur',cancel);cancel();
       }
     };

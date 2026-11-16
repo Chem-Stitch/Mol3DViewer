@@ -50,7 +50,7 @@ test('numeric keys set solid order and D toggles dashed bonds off', () => {
 
 test('blank clicks clear after picking, but atom clicks, drags and outside releases do not', async () => {
   const {bindBlankClick}=require('../src/interaction.js');
-  const target=()=>({listeners:{},addEventListener(k,fn){this.listeners[k]=fn;},removeEventListener(k){delete this.listeners[k];}});
+  const target=()=>({listeners:{},addEventListener(k,fn,capture){if(k==='mouseup')assert.equal(capture,false,'blank detection must run after the body atom-picker');this.listeners[k]=fn;},removeEventListener(k){delete this.listeners[k];}});
   const element=target(),doc=target(),win=target();element.ownerDocument=doc;doc.defaultView=win;
   element.contains=node=>node===element;
   let clears=0;
@@ -58,13 +58,15 @@ test('blank clicks clear after picking, but atom clicks, drags and outside relea
   const event=(x=0,target=element)=>({button:0,clientX:x,clientY:0,target});
   element.listeners.mousedown(event());doc.listeners.mouseup(event());
   await Promise.resolve();assert.equal(clears,1);
-  element.listeners.mousedown(event());doc.listeners.mouseup(event());binding.markPicked();
+  element.listeners.mousedown(event());
+  // Native dispatch can flush microtasks between capture and body listeners.
+  await Promise.resolve();binding.markPicked();doc.listeners.mouseup(event());
   await Promise.resolve();assert.equal(clears,1);
   element.listeners.mousedown(event());doc.listeners.mousemove(event(20));doc.listeners.mouseup(event());
   await Promise.resolve();assert.equal(clears,1);
   element.listeners.mousedown(event());doc.listeners.mouseup(event(0,{}));
   await Promise.resolve();assert.equal(clears,1);
-  element.listeners.mousedown(event());doc.listeners.mouseup(event());win.listeners.blur();
+  element.listeners.mousedown(event());win.listeners.blur();doc.listeners.mouseup(event());
   await Promise.resolve();assert.equal(clears,1);
   binding.destroy();assert.deepEqual(element.listeners,{});assert.deepEqual(doc.listeners,{});
 });
